@@ -2,6 +2,7 @@ let express = require("express");
 let app = express();
 
 app.use("/", express.static("public"));
+app.use("/utils.js", express.static("utils.js"));
 
 let port = process.env.PORT || 7000;
 let server = app.listen(port, function done() {
@@ -11,12 +12,12 @@ let server = app.listen(port, function done() {
 let WebSocket = require("ws");
 let wss = new WebSocket.Server({ server });
 
-function isWsOpen(ws) {
-	return ws && ws.statusCode == WebSocket.OPEN;
-}
+global.WebSocket = WebSocket;
 
-function onWsConnection(ws) {
-	console.log("New ws connection");
+let utils = require("./utils.js");
+
+function onWsConnection(ws, req) {
+	console.log("New ws connection with ip=" + ws._socket.remoteAddress);
 	ws.binaryType = "arraybuffer";
 	
 	function onWsMessage(msg) {
@@ -24,29 +25,26 @@ function onWsConnection(ws) {
 	}
 
 	function onWsClose() {
-		console.log("ws connection closed.");
+		
 	}
 
 	function handleWsMessage(view) {
 		let offset = 0;
 		switch (view.getUint8(offset++)) {
-			case 22: 
-				console.log(view.getInt16(offset));
+			case 10: 
+				console.log(readString(view, 1));
 				break;
 			default: console.log("unknown client msg.");
 		}
 	}
 
 	let view = new DataView(new ArrayBuffer(1+4));
-	view.setUint8(0, 44);
+	view.setUint8(0, 10);
 	view.setInt16(1, 6969);
 	ws.send(view);
 
 	ws.isAlive = true;
-	ws.on("pong", function() {
-		ws.isAlive = true;
-	});
-
+	ws.on("pong", function() { ws.isAlive = true; });
 	ws.onmessage = onWsMessage;
 	ws.onclose = onWsClose;
 }

@@ -12,8 +12,8 @@ function onWsMessage(msg) {
 function handleWsMessage(view) {
 	let offset = 0;
 	switch (view.getUint8(offset++)) {
-		case 44:
-			console.log(view.getInt16(offset));
+		case 10:
+			console.log(readString(view, offset));
 			break;
 		default: console.log("unknown server msg.");
 	}
@@ -29,14 +29,11 @@ function onWsClose() {
 
 function onWsOpen() {
 	console.log("Connected!");
-	let view = new DataView(new ArrayBuffer(1+4));
-	view.setUint8(0, 22);
-	view.setInt16(1, 4269);
+	let str = "my name is jeff";
+	let view = new DataView(new ArrayBuffer(1+str.length+1));
+	view.setUint8(0, 10);
+	writeString(view, 1, str);
 	ws.send(view);
-}
-
-function isWsOpen(ws) {
-	return ws && ws.statusCode == WebSocket.OPEN;
 }
 
 function wsConnect(wsUrl) {
@@ -57,3 +54,5 @@ function wsConnect(wsUrl) {
 	ws.onclose = onWsClose;
 	ws.onerror = function () { console.oog("websocket error.") }
 }
+
+
