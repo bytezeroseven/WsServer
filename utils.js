@@ -20,6 +20,24 @@ function readString(view, offset) {
 	return str;
 }
 
+function prepareMsg(b) {
+	return new DataView(new ArrayBuffer(b));
+}
+
+function wsSend(ws, view) {
+	if (isWsOpen(ws)) { 
+		ws.send(view);
+		netstats.incrementSent(view.byteLength);
+	}
+}
+
+function sendString(ws, str) {
+	let view = prepareMsg(1+str.length+1);
+	view.setUint8(0, 10);
+	writeString(view, 1, str);
+	wsSend(ws, view);
+}
+
 let netstats = { 
 	throughput: 0,
 	totalUp: 0,
@@ -57,10 +75,42 @@ let netstats = {
 	}
 };
 
-function wsSend(ws, view) {
-	if (isWsOpen(ws)) { 
-		ws.send(view);
-		netstats.incrementSent(view.byteLength);
+netstats.tick();
+
+class Node {
+	constructor() {
+		this.ws = null;
+		this.id = Math.round(Math.random() * 1E5);
+		this.x = 0;
+		this.y = 0;
+		this.nickname = "";
+		this.newX = this.oldX = this.x;
+		this.newY = this.oldY = this.y;
+		this.updateTime = 0;
+		this.mouseX = 0;
+		this.mouseY = 0;
+		this.isPlaying = false;
+	}
+	updatePos() {
+		let t = Math.min((timestamp - this.updateTime) / animDelay, 1);
+		this.x = this.oldX + (this.newX - this.oldX) * t;
+		this.y = this.oldY + (this.newY - this.oldY) * t;
+	}
+	move() {
+		let d = Math.hypot(this.mouseX, this.mouseY) || 1;
+		this.x += this.mouseX / d * 3;
+		this.y += this.mouseY / d * 3;
+	}
+	draw() {
+		ctx.beginPath();
+		ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+		ctx.closePath();
+		ctx.fillStyle = "red";
+		ctx.fill();
+		ctx.fillStyle = "black";
+		ctx.textBaseline = "bottom";
+		ctx.textAlign = "center";
+		ctx.fillText(this.nickname, this.x, this.y - 6);
 	}
 }
 
@@ -72,6 +122,9 @@ function wsSend(ws, view) {
 			global.readString = readString;
 			global.wsSend = wsSend;
 			global.netstats = netstats;
+			global.prepareMsg = prepareMsg;
+			global.sendString = sendString;
+			global.Node = Node;
 		}
 	}
 	if (typeof module != "undefined" && typeof module.exports == "object") {
@@ -82,6 +135,9 @@ function wsSend(ws, view) {
 			wsSend,
 			netstats,
 			modifyGlobal,
+			prepareMsg,
+			sendString,
+			Node: Node
 		};
 	}
 })();

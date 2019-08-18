@@ -4,24 +4,25 @@ body {
 	font-family: arial;
 	font-weight: 700;
 	color: #fff;
+	font-size: 16px;
 }
-a {
-	text-decoration: none;
-	color: #111;
+a { 
+	color: #111; 
+	text-decoration: none; 
 }
-a:hover {
-	color: #000;
+a:hover { 
+	color: #000; 
 }
 button, input[type="text"] {
-	padding: 10px 5px;
-	color: #fff;
-	font-weight: 700;
 	outline: 0;
 	border: 0;
-	background: rgba(0, 0, 0, 0.4);
+	color: #fff;
+	background: rgba(0, 0, 0, 0.6);
 	border-radius: 5px;
+	font-weight: 700;
 	font-size: 1.66em;
 	margin: 5px;
+	padding: 10px 10px;
 }
 button {
 	cursor: pointer;
@@ -61,22 +62,9 @@ button:active {
 #nicknameInput, #playButton {
 	padding: 15px 10px;
 	font-size: 3em;
-	background: rgba(0, 0, 0, 0.6);
 }
 #nicknameInput {
 	width: 330px;
-}
-#topBox, #bottomBox {
-	position: absolute;
-	left: 0;
-	padding: 10px;
-	font-size: 1.66em;
-}
-#topBox {
-	top: 0;
-}
-#bottomBox {
-	bottom: 0;
 }
 .overlay {
 	position: absolute;
@@ -111,4 +99,9 @@ button:active {
 }
 #connectingUrl {
 	font-size: 0.66em;
+}
+#topRight {
+	position: absolute;
+	top: 10px;
+	right: 10px;
 }

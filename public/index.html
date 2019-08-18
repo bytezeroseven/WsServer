@@ -6,24 +6,27 @@
 	<link rel="stylesheet" type="text/css" href="main.css">
 </head>
 <body>
+	<canvas class="overlay" id="gameCanvas"></canvas>
 	<div class="overlay" id="mainOverlay">
-		<div id="connectingBox">
-			<div>Connecting...</div>
-			<div id="connectingUrl">Null</div>
-		</div>
 		<div id="titleBox">
 			<h1 id="gameTitle">ioioio.io</h1>
 			<h6 id="gameDesc">aye ohh!!</h6>
 		</div>
 		<div id="menuBox">
 			<div id="inputBox">
-				<input type="text" id="nicknameInput" placeholder="Nickname pls" spellcheck="false">
+				<input type="text" id="nicknameInput" placeholder="Nickname pls" spellcheck="false" maxlength="16">
 				<button id="playButton">Play</button>
 			</div>
 		</div>
 		<div id="ad">720x90</div>
-		<div id="topBox"></div>
-		<div id="bottomBox"></div>
+		<div id="connectingBox">
+			<div>Connecting...</div>
+			<div id="connectingUrl">Null</div>
+		</div>
+		<div id="topRight">
+			<button id="inviteButton">Invite</button>
+			<button id="joinButton">Join</button>
+		</div>
 	</div>
 	<script src="../utils.js"></script>
 	<script src="main.js"></script>

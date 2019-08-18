@@ -3,9 +3,25 @@ let playButton = document.getElementById("playButton");
 let nicknameInput = document.getElementById("nicknameInput");
 let connectingUrl = document.getElementById("connectingUrl");
 let connectingBox = document.getElementById("connectingBox");
+let inviteButton = document.getElementById("inviteButton");
+let joinButton = document.getElementById("joinButton");
+let gameCanvas = document.getElementById("gameCanvas");
+let ctx = gameCanvas.getContext("2d");
+let canvasWidth = 0;
+let canvasHeight = 0;
+let scale = 1;
+let nodes = [];
+let animDelay = 120;
+let timestamp = 0;
+let mouseX = 0;
+let mouseY = 0;
 
 function onResize() {
-	let scale = Math.min(innerWidth / 1200, innerHeight / 675);
+	canvasWidth = innerWidth;
+	canvasHeight = innerHeight;
+	gameCanvas.width = canvasWidth;
+	gameCanvas.height = canvasHeight;
+	scale = Math.min(innerWidth / 1200, innerHeight / 675);
 	mainOverlay.style.transform = "translate(-50%, -50%) scale(" + scale + ") translate(50%, 50%)";
 	mainOverlay.style.width = innerWidth / scale + "px";
 	mainOverlay.style.height = innerHeight / scale + "px";
@@ -16,10 +32,17 @@ function onKeyUp(evt) {
 	if (evt.key == "Escape") toggleEle(mainOverlay);
 }
 
+function onMouseMove(evt) {
+	mouseX = evt.clientX;
+	mouseY = evt.clientY;
+	sendMousePos();
+}
+
+document.onmousemove = onMouseMove;
 document.onkeyup = onKeyUp;
 
 let ws = null;
-let oldUrl = null;
+let oldWsUrl = null;
 let reconnectAttempt = null;
 let reconnectAttemptTime = 5E3;
 
@@ -33,6 +56,41 @@ function handleWsMessage(view) {
 	switch (view.getUint8(offset++)) {
 		case 10:
 			console.log(readString(view, offset));
+			break;
+		case 5:
+			let nodeId = 0;
+			let posX = 0;
+			let posY = 0;
+			let nickname = null;
+			let length = view.getInt32(offset); offset += 4;
+			for (let i = 0; i < length; i++) {
+				nodeId = view.getInt32(offset); offset += 4;
+				posX = view.getInt32(offset); offset += 4;
+				posY = view.getInt32(offset); offset += 4;
+				nickname = readString(view, offset);
+				offset += nickname.length+1;
+				let node = nodes.find(node => node.id == nodeId);
+				if (!node) {
+					node = new Node();
+					node.id = nodeId;
+					node.x = posX;
+					node.y = posY;
+					nodes.push(node);
+				} else {
+					node.oldX = node.x;
+					node.oldY = node.y;
+					node.newX = posX;
+					node.newY = posY;
+					node.updateTime = timestamp;
+				}
+				node.nickname = nickname;
+			}
+			length = view.getInt32(offset); offset += 4;
+			for (let i = 0; i < length; i++) {
+				nodeId = view.getInt32(offset); offset += 4;
+				let i = nodes.findIndex(node => node.id == nodeId);
+				if (i > -1) nodes.splice(i, 1);
+			}
 			break;
 		default: console.log("unknown server msg.");
 	}
@@ -54,8 +112,8 @@ function onWsOpen() {
 
 function wsConnect(wsUrl) {
 	console.log("Connecting to " + wsUrl + "...");
-	playButton.disabled = true;
 	showEle(connectingBox);
+	playButton.disabled = true;
 	connectingUrl.innerHTML = wsUrl;
 	if (reconnectAttempt) {
 		clearTimeout(reconnectAttempt);
@@ -68,21 +126,44 @@ function wsConnect(wsUrl) {
 		ws.close();
 		ws = null;
 	}
-	wsUrl = wsUrl.replace("http", "ws");
 	oldWsUrl = wsUrl;
+	wsUrl = wsUrl.replace("http", "ws");
 	ws = new WebSocket(wsUrl);
 	ws.binaryType = "arraybuffer";
 	ws.onmessage = onWsMessage;
 	ws.onopen = onWsOpen;
 	ws.onclose = onWsClose;
 	ws.onerror = function () { console.log("websocket error.") }
+	nodes = [];
 }
 
 function sendNickname() {
 	let view = new DataView(new ArrayBuffer(1+nicknameInput.value.length+1));
-	view.setUint8(0, 10);
+	view.setUint8(0, 11);
 	writeString(view, 1, nicknameInput.value);
 	wsSend(ws, view);
+}
+
+function sendMousePos() {
+	let posX = mouseX - canvasWidth / 2,
+		posY = mouseY - canvasHeight / 2;
+	let view = prepareMsg(1+4+4);
+	view.setUint8(0, 2);
+	view.setInt16(1, posX);
+	view.setInt16(5, posY);
+	wsSend(ws, view);
+}
+
+function gameLoop() {
+	timestamp = Date.now();
+	ctx.fillStyle = "#ddd";
+	ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+	nodes.forEach(node => {
+		node.updatePos();
+		node.draw();
+	});
+	requestAnimationFrame(gameLoop);
 }
 
 function isHidden(ele) {
@@ -107,5 +188,26 @@ playButton.onclick = function() {
 	hideEle(mainOverlay);
 }
 
+inviteButton.onclick = function() {
+	let input = document.createElement("input");
+	document.body.appendChild(input);
+	input.value = oldWsUrl;
+	input.select();
+	document.execCommand('copy');
+	document.body.removeChild(input);
+	inviteButton.innerHTML = "Copied!";
+	let timeoutId = setTimeout(function() { 
+		inviteButton.innerHTML = "Invite"; 
+		clearTimeout(timeoutId);
+		timeoutId = null;
+	}, 3E3);
+}
+
+joinButton.onclick = function() {
+	let url = prompt("Enter url:", "http://localhost:7000");
+	url && wsConnect(url);
+}
+
 onResize();
+gameLoop();
 wsConnect(location.origin);
