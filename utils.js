@@ -103,14 +103,21 @@ class Node {
 	}
 	draw() {
 		ctx.beginPath();
-		ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+		ctx.arc(this.x, this.y, 20, 0, Math.PI * 2);
 		ctx.closePath();
-		ctx.fillStyle = "red";
+		ctx.lineWidth = 4;
+		ctx.strokeStyle = "#e24413";
+		ctx.fillStyle = "#ff5722";
 		ctx.fill();
-		ctx.fillStyle = "black";
+		ctx.stroke();
+		ctx.lineWidth = 1;
+		ctx.fillStyle = "white";
+		ctx.strokeStyle = "black";
 		ctx.textBaseline = "bottom";
 		ctx.textAlign = "center";
-		ctx.fillText(this.nickname, this.x, this.y - 6);
+		ctx.font = "bolder 28px arial";
+		ctx.fillText(this.nickname, this.x, this.y - 20 - 5);
+		ctx.strokeText(this.nickname, this.x, this.y - 25);
 	}
 }
 

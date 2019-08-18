@@ -15,6 +15,9 @@ let animDelay = 120;
 let timestamp = 0;
 let mouseX = 0;
 let mouseY = 0;
+let screenNodeId = null;
+let nodeX = 0;
+let nodeY = 0;
 
 function onResize() {
 	canvasWidth = innerWidth;
@@ -88,9 +91,12 @@ function handleWsMessage(view) {
 			length = view.getInt32(offset); offset += 4;
 			for (let i = 0; i < length; i++) {
 				nodeId = view.getInt32(offset); offset += 4;
-				let i = nodes.findIndex(node => node.id == nodeId);
-				if (i > -1) nodes.splice(i, 1);
+				let index = nodes.findIndex(node => node.id == nodeId);
+				if (index > -1) nodes.splice(index, 1);
 			}
+			break;
+		case 8: 
+			screenNodeId = view.getInt32(offset);
 			break;
 		default: console.log("unknown server msg.");
 	}
@@ -155,15 +161,23 @@ function sendMousePos() {
 }
 
 function gameLoop() {
+	requestAnimationFrame(gameLoop);
 	timestamp = Date.now();
 	ctx.fillStyle = "#ddd";
 	ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
+	let screenNode = nodes.find(node => node.id == screenNodeId);
+	if (screenNode) {
+		nodeX = screenNode.x;
+		nodeY = screenNode.y;
+	}
+	ctx.save();
+	ctx.translate(-nodeX + canvasWidth / 2, -nodeY + canvasHeight / 2);
 	nodes.forEach(node => {
 		node.updatePos();
 		node.draw();
 	});
-	requestAnimationFrame(gameLoop);
+	ctx.restore();
 }
 
 function isHidden(ele) {
