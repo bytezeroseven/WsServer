@@ -51,7 +51,7 @@ function onWsConnection(ws, req) {
 		}
 	}
 
-	let str = "Test server message!!";
+	let str = "hippityy hoopity!!";
 	sendString(ws, str);
 
 	ws.isAlive = true;
