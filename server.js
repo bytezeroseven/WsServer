@@ -89,29 +89,31 @@ function gameTick() {
 
 let WebSocket = require("ws");
 let express = require("express");
-let app = express();
 
 global.WebSocket = WebSocket;
 
 let utils = require("./utils.js");
 utils.modifyGlobal();
 
-app.use("/", express.static("public"));
-app.use("/utils.js", express.static("utils.js"));
+function startWsServer() {
+	let app = express();
+	app.use("/", express.static("public"));
+	app.use("/utils.js", express.static("utils.js"));
 
-let port = process.env.PORT || 7000;
-let server = app.listen(port, function done() {
-	console.log("Server listening on port=" + port);
-});
+	let port = process.env.PORT || 7000;
+	let server = app.listen(port, function done() {
+		console.log("Server listening on port=" + port);
+	});
+	let wss = new WebSocket.Server({ server });
 
-let wss = new WebSocket.Server({ server });
+	let pingpongInterval = setInterval(function () {
+		wss.clients.forEach(function (ws) {
+			if (ws.isAlive == false) ws.close();
+			ws.isAlive = false;
+			ws.ping();
+		});	
+	}, 30E3);
+	wss.on("connection", onWsConnection);
+}
 
-let pingpongInterval = setInterval(function () {
-	wss.clients.forEach(function (ws) {
-		if (ws.isAlive == false) ws.close();
-		ws.isAlive = false;
-		ws.ping();
-	});	
-}, 30E3);
-
-wss.on("connection", onWsConnection);
+startWsServer();
