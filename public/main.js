@@ -50,7 +50,6 @@ let reconnectAttempt = null;
 let reconnectAttemptTime = 5E3;
 
 function onWsMessage(msg) {
-	netstats.incrementReceived(msg.data.byteLength);
 	handleWsMessage(new DataView(msg.data));
 }
 
@@ -225,3 +224,4 @@ joinButton.onclick = function() {
 onResize();
 gameLoop();
 wsConnect(location.origin);
+

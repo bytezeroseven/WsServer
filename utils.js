@@ -27,7 +27,6 @@ function prepareMsg(b) {
 function wsSend(ws, view) {
 	if (isWsOpen(ws)) { 
 		ws.send(view);
-		netstats.incrementSent(view.byteLength);
 	}
 }
 
@@ -37,45 +36,6 @@ function sendString(ws, str) {
 	writeString(view, 1, str);
 	wsSend(ws, view);
 }
-
-let netstats = { 
-	throughput: 0,
-	totalUp: 0,
-	totalDown: 0, 
-	total: 0, 
-	upRate: 0, 
-	downRate: 0, 
-	timeElapsed: 0,
-	tickTimeout: null,
-	tick: function(func) {
-		this.text = "T: " + this.throughput + "B/s " + "D: " + this.downRate + "B/s " + "S: " + this.upRate + "B/s";
-		this.throughput = 0;
-		this.upRate = 0;
-		this.downRate = 0;
-		this.timeElapsed += 1;
-		this.stopTick();
-		if (func) func(this.text);
-		this.tickTimeout = setTimeout(() => { this.tick(func); }, 1E3);
-	},
-	stopTick: function() {
-		clearTimeout(this.tickTimeout);
-		this.tickTimeout = null;
-	},
-	incrementSent: function(b) {
-		this.throughput += b;
-		this.total += b;
-		this.totalUp += b;
-		this.upRate += b;
-	},
-	incrementReceived: function(b) {
-		this.throughput += b;
-		this.total += b;
-		this.totalDown += b;
-		this.downRate += b;
-	}
-};
-
-netstats.tick();
 
 class Node {
 	constructor() {
@@ -122,30 +82,25 @@ class Node {
 }
 
 (function () {
+	let obj = {
+		isWsOpen: isWsOpen, 
+		readString: readString,
+		writeString: writeString,
+		wsSend: wsSend,
+		modifyGlobal: modifyGlobal,
+		prepareMsg: prepareMsg,
+		sendString: sendString,
+		Node: Node
+	}
 	function modifyGlobal() {
 		if (typeof global == "object") {
-			global.isWsOpen = isWsOpen;
-			global.writeString = writeString;
-			global.readString = readString;
-			global.wsSend = wsSend;
-			global.netstats = netstats;
-			global.prepareMsg = prepareMsg;
-			global.sendString = sendString;
-			global.Node = Node;
+			for (let key in obj) {
+				global[key] = obj[key];
+			}
 		}
 	}
 	if (typeof module != "undefined" && typeof module.exports == "object") {
-		module.exports = {
-			isWsOpen, 
-			readString,
-			readString,
-			wsSend,
-			netstats,
-			modifyGlobal,
-			prepareMsg,
-			sendString,
-			Node: Node
-		};
+		module.exports = obj;
 	}
 })();
 	

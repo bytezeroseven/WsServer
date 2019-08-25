@@ -18,7 +18,6 @@ function onWsConnection(ws, req) {
 	wsSend(ws, view);
 	
 	function onWsMessage(msg) {
-		netstats.incrementReceived(msg.data.byteLength);
 		handleWsMessage(new DataView(msg.data));
 	}
 
@@ -107,7 +106,7 @@ let server = app.listen(port, function done() {
 
 let wss = new WebSocket.Server({ server });
 
-let pingCheckInterval = setInterval(function () {
+let pingpongInterval = setInterval(function () {
 	wss.clients.forEach(function (ws) {
 		if (ws.isAlive == false) ws.close();
 		ws.isAlive = false;
