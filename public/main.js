@@ -6,7 +6,7 @@ let connectingBox = document.getElementById("connectingBox");
 let inviteButton = document.getElementById("inviteButton");
 let joinButton = document.getElementById("joinButton");
 let gameCanvas = document.getElementById("gameCanvas");
-let ctx = false && gameCanvas.getContext("2d");
+let ctx = gameCanvas.getContext("2d");
 let canvasWidth = 0;
 let canvasHeight = 0;
 let scale = 1;
@@ -19,10 +19,6 @@ let mouseMoveX = 0;
 let mouseMoveY = 0;
 let keys = {};
 let screenNodeId = null;
-
-gameCanvas.onclick = function() {
-	gameCanvas.requestPointerLock();
-}
 
 function onResize() {
 	camera.aspect = innerWidth / innerHeight;
@@ -170,7 +166,7 @@ function sendKeyUp(keyCode) {
 
 function gameLoop() {
 	requestAnimationFrame(gameLoop);
-	renderer.render(scene, camera);
+	ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 }
 
 function isHidden(ele) {
