@@ -21,8 +21,6 @@ let keys = {};
 let screenNodeId = null;
 
 function onResize() {
-	camera.aspect = innerWidth / innerHeight;
-	camera.updateProjectionMatrix();
 	canvasWidth = innerWidth;
 	canvasHeight = innerHeight;
 	gameCanvas.width = canvasWidth;
