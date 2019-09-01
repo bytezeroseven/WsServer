@@ -6,7 +6,7 @@ let connectingBox = document.getElementById("connectingBox");
 let inviteButton = document.getElementById("inviteButton");
 let joinButton = document.getElementById("joinButton");
 let gameCanvas = document.getElementById("gameCanvas");
-let ctx = gameCanvas.getContext("2d");
+let ctx = false && gameCanvas.getContext("2d");
 let canvasWidth = 0;
 let canvasHeight = 0;
 let scale = 1;
@@ -15,11 +15,18 @@ let animDelay = 120;
 let timestamp = 0;
 let mouseX = 0;
 let mouseY = 0;
+let mouseMoveX = 0;
+let mouseMoveY = 0;
+let keys = {};
 let screenNodeId = null;
-let nodeX = 0;
-let nodeY = 0;
+
+gameCanvas.onclick = function() {
+	gameCanvas.requestPointerLock();
+}
 
 function onResize() {
+	camera.aspect = innerWidth / innerHeight;
+	camera.updateProjectionMatrix();
 	canvasWidth = innerWidth;
 	canvasHeight = innerHeight;
 	gameCanvas.width = canvasWidth;
@@ -31,17 +38,30 @@ function onResize() {
 }
 window.onresize = onResize;
 
+function onKeyDown(evt) {
+	if (!evt.repeat) {
+		keys[evt.key] = true;
+		sendKeyDown(evt.keyCode);
+	}
+}
+
 function onKeyUp(evt) {
 	if (evt.key == "Escape") toggleEle(mainOverlay);
+	delete keys[evt.key];
+	sendKeyUp(evt.keyCode);
 }
 
 function onMouseMove(evt) {
+	mouseMoveX = evt.movementX;
+	mouseMoveY = evt.movementY;
 	mouseX = evt.clientX;
 	mouseY = evt.clientY;
 	sendMousePos();
+	sendMouseMove();
 }
 
 document.onmousemove = onMouseMove;
+document.onkeydown = onKeyDown;
 document.onkeyup = onKeyUp;
 
 let ws = null;
@@ -56,46 +76,13 @@ function onWsMessage(msg) {
 function handleWsMessage(view) {
 	let offset = 0;
 	switch (view.getUint8(offset++)) {
-		case 10:
+		case 10: // Random string message
 			console.log(readString(view, offset));
 			break;
-		case 5:
-			let nodeId = 0;
-			let posX = 0;
-			let posY = 0;
-			let nickname = null;
-			let length = view.getInt32(offset); offset += 4;
-			for (let i = 0; i < length; i++) {
-				nodeId = view.getInt32(offset); offset += 4;
-				posX = view.getInt32(offset); offset += 4;
-				posY = view.getInt32(offset); offset += 4;
-				nickname = readString(view, offset);
-				offset += nickname.length+1;
-				let node = nodes.find(node => node.id == nodeId);
-				if (!node) {
-					node = new Node();
-					node.id = nodeId;
-					node.x = posX;
-					node.y = posY;
-					nodes.push(node);
-				} else {
-					node.oldX = node.x;
-					node.oldY = node.y;
-					node.newX = posX;
-					node.newY = posY;
-					node.updateTime = timestamp;
-				}
-				node.nickname = nickname;
-			}
-			length = view.getInt32(offset); offset += 4;
-			for (let i = 0; i < length; i++) {
-				nodeId = view.getInt32(offset); offset += 4;
-				let index = nodes.findIndex(node => node.id == nodeId);
-				if (index > -1) nodes.splice(index, 1);
-			}
-			break;
-		case 8: 
+		case 20: // Local player id 
 			screenNodeId = view.getInt32(offset);
+			break;
+		case 25: // Update nodes
 			break;
 		default: console.log("unknown server msg.");
 	}
@@ -153,30 +140,37 @@ function sendMousePos() {
 	let posX = mouseX - canvasWidth / 2,
 		posY = mouseY - canvasHeight / 2;
 	let view = prepareMsg(1+4+4);
-	view.setUint8(0, 2);
+	view.setUint8(0, 5);
 	view.setInt16(1, posX);
 	view.setInt16(5, posY);
 	wsSend(ws, view);
 }
 
+function sendMouseMove() {
+	let view = prepareMsg(1+4+4);
+	view.setUint8(0, 6);
+	view.setInt16(1, mouseMoveX);
+	view.setInt16(5, mouseMoveY);
+	wsSend(ws, view);
+}
+
+function sendKeyDown(keyCode) {
+	let view = prepareMsg(1+1);
+	view.setUint8(0, 15);
+	view.setUint8(1, keyCode);
+	wsSend(ws, view);
+}
+
+function sendKeyUp(keyCode) {
+	let view = prepareMsg(1+1);
+	view.setUint8(0, 16);
+	view.setUint8(1, keyCode);
+	wsSend(ws, view);
+}
+
 function gameLoop() {
 	requestAnimationFrame(gameLoop);
-	timestamp = Date.now();
-	ctx.fillStyle = "#ddd";
-	ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-	let screenNode = nodes.find(node => node.id == screenNodeId);
-	if (screenNode) {
-		nodeX = screenNode.x;
-		nodeY = screenNode.y;
-	}
-	ctx.save();
-	ctx.translate(-nodeX + canvasWidth / 2, -nodeY + canvasHeight / 2);
-	nodes.forEach(node => {
-		node.updatePos();
-		node.draw();
-	});
-	ctx.restore();
+	renderer.render(scene, camera);
 }
 
 function isHidden(ele) {
@@ -202,12 +196,12 @@ playButton.onclick = function() {
 }
 
 inviteButton.onclick = function() {
-	let input = document.createElement("input");
-	document.body.appendChild(input);
-	input.value = oldWsUrl;
-	input.select();
+	let copyInput = document.createElement("input");
+	document.body.appendChild(copyInput);
+	copyInput.value = oldWsUrl;
+	copyInput.select();
 	document.execCommand('copy');
-	document.body.removeChild(input);
+	document.body.removeChild(copyInput);
 	inviteButton.innerHTML = "Copied!";
 	let timeoutId = setTimeout(function() { 
 		inviteButton.innerHTML = "Invite"; 

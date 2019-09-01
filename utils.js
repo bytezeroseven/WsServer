@@ -39,58 +39,37 @@ function sendString(ws, str) {
 
 class Node {
 	constructor() {
-		this.ws = null;
 		this.id = Math.round(Math.random() * 1E5);
 		this.x = 0;
 		this.y = 0;
-		this.nickname = "";
+		this.ws = null;
+		this.nickname = new String();
 		this.newX = this.oldX = this.x;
 		this.newY = this.oldY = this.y;
 		this.updateTime = 0;
 		this.mouseX = 0;
 		this.mouseY = 0;
-		this.isPlaying = false;
+		this.mouseMoveX = 0;
+		this.mouseMoveY = 0;
+		this.keys = {};
 	}
 	updatePos() {
 		let t = Math.min((timestamp - this.updateTime) / animDelay, 1);
 		this.x = this.oldX + (this.newX - this.oldX) * t;
 		this.y = this.oldY + (this.newY - this.oldY) * t;
 	}
-	move() {
-		let d = Math.hypot(this.mouseX, this.mouseY) || 1;
-		this.x += this.mouseX / d * 3;
-		this.y += this.mouseY / d * 3;
-	}
-	draw() {
-		ctx.beginPath();
-		ctx.arc(this.x, this.y, 20, 0, Math.PI * 2);
-		ctx.closePath();
-		ctx.lineWidth = 4;
-		ctx.strokeStyle = "#e24413";
-		ctx.fillStyle = "#ff5722";
-		ctx.fill();
-		ctx.stroke();
-		ctx.lineWidth = 1;
-		ctx.fillStyle = "white";
-		ctx.strokeStyle = "black";
-		ctx.textBaseline = "bottom";
-		ctx.textAlign = "center";
-		ctx.font = "bolder 28px arial";
-		ctx.fillText(this.nickname, this.x, this.y - 20 - 5);
-		ctx.strokeText(this.nickname, this.x, this.y - 25);
-	}
 }
 
 (function () {
 	let obj = {
-		isWsOpen: isWsOpen, 
-		readString: readString,
-		writeString: writeString,
-		wsSend: wsSend,
-		modifyGlobal: modifyGlobal,
-		prepareMsg: prepareMsg,
-		sendString: sendString,
-		Node: Node
+		isWsOpen: 		isWsOpen, 
+		wsSend: 		wsSend,
+		prepareMsg: 	prepareMsg,
+		readString: 	readString,
+		writeString: 	writeString,
+		sendString: 	sendString,
+		modifyGlobal: 	modifyGlobal,
+		Node: 			Node,
 	}
 	function modifyGlobal() {
 		if (typeof global == "object") {
