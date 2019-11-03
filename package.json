@@ -1,7 +1,7 @@
 {
   "name": "wsserver",
   "version": "1.0.0",
-  "description": "",
+  "description": "io game template",
   "main": "server.js",
   "dependencies": {
     "express": "^4.17.1",
